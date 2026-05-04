@@ -75,7 +75,7 @@ class GroqChat:
         }
 
         request = urllib.request.Request(
-            "https://api.groq.com/v1/responses",
+            "https://api.groq.com/openai/v1/responses",
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
