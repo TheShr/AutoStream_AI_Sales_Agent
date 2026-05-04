@@ -1,0 +1,62 @@
+{
+  "tenant_id": "betty-saloon",
+  "business_name": "Betty Saloon",
+  "description": "Betty Saloon is a modern beauty and grooming studio offering premium hair, skincare, and styling services in a relaxed, welcoming environment. Our expert stylists focus on personalized treatments to help clients look and feel their best. Whether it\u2019s a quick refresh or a complete makeover, Betty Saloon delivers high-quality results with a touch of elegance.",
+  "tone": "professional",
+  "pricing": [
+    {
+      "name": "Basic Care",
+      "price_monthly": 29,
+      "features": [
+        "Haircut & basic styling",
+        "Hair wash & blow dry",
+        "Basic skincare consultation"
+      ]
+    },
+    {
+      "name": "Premium Care",
+      "price_monthly": 79,
+      "features": [
+        "Advanced haircut & styling",
+        "Hair spa treatment",
+        "Facial & skincare treatment",
+        "Priority booking"
+      ]
+    },
+    {
+      "name": "Luxury Experience",
+      "price_monthly": 149,
+      "features": [
+        "Personal stylist session",
+        "Premium hair & skin treatments",
+        "Bridal / event makeover",
+        "Exclusive products & care",
+        "VIP priority service"
+      ]
+    }
+  ],
+  "faqs": [
+    {
+      "question": "Do I need to book an appointment in advance?",
+      "answer": "We recommend booking in advance to secure your preferred time, but walk-ins are welcome based on availability."
+    },
+    {
+      "question": "Can I choose my stylist?",
+      "answer": "Yes, you can request your preferred stylist while booking your appointment."
+    },
+    {
+      "question": "Do you offer bridal or event makeup services?",
+      "answer": "Yes, we provide complete bridal and event makeover packages. Please contact us in advance for bookings."
+    },
+    {
+      "question": "What products do you use?",
+      "answer": "We use high-quality professional products suitable for different hair and skin types."
+    },
+    {
+      "question": "How long does a typical session take?",
+      "answer": "It depends on the service, but most treatments take between 30 minutes to 2 hours."
+    }
+  ],
+  "updated_at": "2026-05-04T07:48:18.477545",
+  "created_at": "2026-05-04T07:43:26.751274"
+}

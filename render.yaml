@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: autostream-ai-sales-backend
+    env: python
+    plan: starter
+    branch: main
+    root: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    autoDeploy: true
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
