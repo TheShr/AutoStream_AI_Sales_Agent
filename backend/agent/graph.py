@@ -60,7 +60,7 @@ class AgentState(TypedDict):
 # ─────────────────────────────────────────────
 
 class GroqChat:
-    def __init__(self, api_key: str, model: str = "llama3-8b-8192", temperature: float = 0.4, max_tokens: int = 512):
+    def __init__(self, api_key: str, model: str = "llama-3.1-8b-instant", temperature: float = 0.4, max_tokens: int = 512):
         self.api_key = api_key
         self.model = model
         self.temperature = temperature
