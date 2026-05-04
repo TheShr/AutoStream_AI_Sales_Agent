@@ -28,6 +28,7 @@ TONE_PERSONALITY = {
     "professional": "Polished, concise, and authoritative — like a senior consultant.",
     "casual": "Relaxed and fun — like chatting with a helpful colleague.",
     "formal": "Formal and precise — like a customer service professional.",
+    "bold": "Confident, dynamic, and assertive — like a bold brand voice that stands out.",
 }
 
 

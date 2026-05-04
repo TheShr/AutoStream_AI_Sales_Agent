@@ -84,7 +84,7 @@ class ConfigureRequest(BaseModel):
     @field_validator("tone")
     @classmethod
     def validate_tone(cls, v):
-        allowed = {"friendly", "professional", "casual", "formal"}
+        allowed = {"friendly", "professional", "casual", "formal", "bold"}
         if v not in allowed:
             raise ValueError(f"tone must be one of: {', '.join(allowed)}")
         return v
