@@ -246,10 +246,3 @@ Load Balancer → [API-1, API-2, API-3] → Redis Cluster → DB sharded by tena
 - [ ] Webhooks (Zapier/Make) · Slack/Teams integration · Lead scoring ML · A/B testing
 - [ ] SSO (OAuth2/SAML) · Custom domains · RBAC · SOC2/HIPAA compliance
 
----
-
-## Support
-
-**Email:** support@autostream.dev · **Discord:** [Join](https://discord.gg/autostream) · **Docs:** [autostream.dev/docs](https://autostream.dev/docs)
-
-![Build](https://github.com/yourusername/autostream-saas/workflows/Build/badge.svg) ![Tests](https://github.com/yourusername/autostream-saas/workflows/Tests/badge.svg) ![License](https://img.shields.io/badge/license-MIT-blue.svg)
