@@ -6,9 +6,21 @@
 (function() {
   'use strict';
 
-  // Configuration
-  const API_BASE = 'https://yourdomain.com'; // Replace with your actual domain
+  // Configuration - will be set by the script tag data attributes
   const WIDGET_ID = 'ai-sales-agent-widget';
+
+  // Get API base from script tag or use default
+  function getApiBase() {
+    const script = document.currentScript || document.querySelector('script[data-tenant]');
+    if (script) {
+      const apiUrl = script.getAttribute('data-api-url');
+      if (apiUrl) return apiUrl;
+    }
+    // Fallback to current domain
+    return window.location.origin;
+  }
+
+  const API_BASE = getApiBase();
 
   // Utility functions
   function createElement(tag, attrs = {}, children = []) {

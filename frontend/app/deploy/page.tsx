@@ -31,7 +31,8 @@ export default function DeployPage() {
 
   useEffect(() => {
     if (config && typeof window !== 'undefined') {
-      setEmbedScript(`<script src="${window.location.origin}/widget.js" data-tenant="${config.tenant_id}"></script>`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || window.location.origin;
+      setEmbedScript(`<script src="${apiUrl}/widget.js" data-tenant="${config.tenant_id}" data-api-url="${apiUrl}"></script>`);
       setPreviewUrl(`${window.location.origin}/preview?tenant=${config.tenant_id}`);
     }
   }, [config]);

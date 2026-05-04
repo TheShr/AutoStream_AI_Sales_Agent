@@ -253,8 +253,21 @@ Load Balancer → [API-1, API-2, API-3] → Redis Cluster → DB sharded by tena
 ## Deployment
 
 **Vercel (frontend):** `vercel deploy` or GitHub auto-deploy via `vercel.json`
+- Set `NEXT_PUBLIC_API_BASE_URL` to your Render backend URL
+- Example: `https://your-app.onrender.com`
 
-**Render (backend):** `render deploy` via `render.yaml` — set `GROQ_API_KEY` and `REDIS_URL`
+**Render (backend):** `render deploy` via `render.yaml` — set `GROQ_API_KEY`, `REDIS_URL`, and `CORS_ORIGINS`
+- `CORS_ORIGINS`: Comma-separated list of allowed frontend domains
+- Example: `https://your-app.vercel.app,https://yourdomain.com`
+
+**Environment Variables:**
+
+| Service | Variable | Description | Example |
+|---------|----------|-------------|---------|
+| Frontend | `NEXT_PUBLIC_API_BASE_URL` | Backend API URL | `https://api.yourapp.com` |
+| Backend | `GROQ_API_KEY` | Groq API key | `gsk_...` |
+| Backend | `REDIS_URL` | Redis connection | `redis://user:pass@host:port` |
+| Backend | `CORS_ORIGINS` | Allowed origins | `https://app.com,https://www.app.com` |
 
 **Production checklist:** GROQ_API_KEY · REDIS_URL (Redis Cloud) · CORS origins · SSL/TLS · Rate limiting · Sentry error tracking · Automated tenant data backups · CDN for frontend assets
 
