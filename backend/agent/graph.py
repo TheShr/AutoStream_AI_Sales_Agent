@@ -107,17 +107,43 @@ class GroqChat:
         return {"role": role, "content": message.content}
 
     def _extract_text(self, payload: dict[str, Any]) -> str:
-        output = payload.get("output")
-        if isinstance(output, list) and output:
-            first = output[0]
-            content = first.get("content")
-            if isinstance(content, list):
-                texts = [item.get("text", "") for item in content if isinstance(item, dict) and item.get("type") == "output_text"]
-                if texts:
-                    return "".join(texts)
-                return " ".join(str(item) for item in content if isinstance(item, str))
+        def parse_content(content: Any) -> str:
             if isinstance(content, str):
                 return content
+            if isinstance(content, dict):
+                return parse_content(content.get("content") or content.get("text") or content)
+            if isinstance(content, list):
+                texts: list[str] = []
+                for item in content:
+                    if isinstance(item, dict):
+                        if item.get("type") == "output_text":
+                            texts.append(str(item.get("text", "")))
+                        else:
+                            texts.append(parse_content(item))
+                    elif isinstance(item, str):
+                        texts.append(item)
+                return " ".join(t for t in texts if t)
+            return ""
+
+        output = payload.get("output")
+        if isinstance(output, list) and output:
+            # Prefer assistant message content, but fall back to any output text.
+            for item in output:
+                if isinstance(item, dict):
+                    text = parse_content(item.get("content") or item)
+                    if text:
+                        return text
+            # If no dict produced text, join raw strings.
+            raw_texts = [str(item) for item in output if isinstance(item, str)]
+            if raw_texts:
+                return " ".join(raw_texts)
+
+        text_field = payload.get("text")
+        if text_field:
+            parsed = parse_content(text_field)
+            if parsed:
+                return parsed
+
         return str(payload)
 
 
