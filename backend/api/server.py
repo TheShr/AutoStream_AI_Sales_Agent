@@ -109,6 +109,7 @@ class ChatRequest(BaseModel):
     tenant_id: str
     user_id: str
     message: str
+    test_mode: bool = False  # New field for test mode
 
     @field_validator("message")
     @classmethod
@@ -126,6 +127,77 @@ class ChatResponse(BaseModel):
     sentiment: str
     lead_captured: bool
     turn_count: int
+    extracted_entities: Optional[dict] = None  # New field for test mode
+    test_mode: bool = False  # New field to indicate if this was a test response
+
+
+class WidgetConfigResponse(BaseModel):
+    tenant_id: str
+    theme: str
+    business_name: str
+    welcome_message: str
+
+
+class FeedbackRequest(BaseModel):
+    tenant_id: str
+    message: str
+    response: str
+    rating: int  # 1 for thumbs up, -1 for thumbs down
+
+    @field_validator("rating")
+    @classmethod
+    def validate_rating(cls, v):
+        if v not in [-1, 1]:
+            raise ValueError("rating must be 1 (thumbs up) or -1 (thumbs down)")
+        return v
+
+
+class ApiKeyResponse(BaseModel):
+    tenant_id: str
+    api_key: str
+    created_at: str
+
+
+class LeadUpdateRequest(BaseModel):
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        if v is not None and v not in ["new", "contacted", "qualified", "closed", "lost"]:
+            raise ValueError("status must be one of: new, contacted, qualified, closed, lost")
+        return v
+
+
+class WebhookRequest(BaseModel):
+    url: str
+    events: List[str]
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, v):
+        from urllib.parse import urlparse
+        parsed = urlparse(v)
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError("url must be a valid URL")
+        return v
+
+    @field_validator("events")
+    @classmethod
+    def validate_events(cls, v):
+        allowed = ["lead.created", "lead.updated"]
+        if not all(event in allowed for event in v):
+            raise ValueError(f"events must be subset of: {', '.join(allowed)}")
+        return v
+
+
+class WebhookResponse(BaseModel):
+    webhook_id: str
+    tenant_id: str
+    url: str
+    events: List[str]
+    created_at: str
 
 
 # ─────────────────────────────────────────────
@@ -169,19 +241,24 @@ async def configure_tenant(request: ConfigureRequest):
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, authorization: Optional[str] = None):
     """
     Main multi-tenant chat endpoint.
 
+    Supports both dashboard (session-based) and API key authentication.
+
     Flow:
     1. Load tenant config (404 if not found)
-    2. Load existing session or create fresh state
-    3. Inject tenant config into state
-    4. Run LangGraph agent
-    5. Persist updated session
-    6. If lead just captured, save to lead store
-    7. Return response
+    2. Authenticate via API key if provided
+    3. Load existing session or create fresh state
+    4. Inject tenant config into state
+    5. Run LangGraph agent
+    6. Persist updated session (unless test mode)
+    7. If lead just captured and not test mode, save to lead store
+    8. Return response with additional test mode data
     """
+    from services.api_key_service import validate_api_key
+
     # 1. Load tenant
     tenant_config = load_tenant(request.tenant_id)
     if not tenant_config:
@@ -190,7 +267,21 @@ async def chat(request: ChatRequest):
             detail=f"Tenant '{request.tenant_id}' not found. Create it via POST /configure first."
         )
 
-    # 2. Load or init session
+    # 2. Validate API key if provided
+    if authorization:
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authorization header format. Use 'Bearer <api_key>'."
+            )
+        api_key = authorization[7:]  # Remove "Bearer " prefix
+        if not validate_api_key(request.tenant_id, api_key):
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid API key."
+            )
+
+    # 3. Load or init session
     state = load_session(request.tenant_id, request.user_id)
     if state is None:
         state = get_initial_state(tenant_config)
@@ -198,20 +289,22 @@ async def chat(request: ChatRequest):
         # Re-inject tenant config (not persisted in session)
         state["tenant_config"] = tenant_config
 
-    # 3. Append user message
+    # 4. Append user message
     state["messages"].append(HumanMessage(content=request.message))
 
-    # 4. Run agent graph
+    # 5. Run agent graph
     result = graph.invoke(state)
 
-    # 5. Persist updated session
-    save_session(request.tenant_id, request.user_id, result)
+    # 6. Persist updated session (skip in test mode)
+    if not request.test_mode:
+        save_session(request.tenant_id, request.user_id, result)
 
-    # 6. If lead just captured this turn, persist it
+    # 7. If lead just captured this turn and not test mode, persist it
     just_captured = (
         result.get("lead_captured", False)
         and not state.get("lead_captured", False)
         and result.get("collection_step") == "done"
+        and not request.test_mode
     )
     if just_captured:
         save_lead(
@@ -220,13 +313,39 @@ async def chat(request: ChatRequest):
             email=result.get("lead_email", ""),
             platform=result.get("lead_platform", ""),
             user_id=request.user_id,
+            phone=result.get("lead_phone", ""),
+            intent=result.get("intent", ""),
         )
 
-    # 7. Extract response
+        # Trigger webhooks for lead.created event
+        from services.webhook_service import trigger_webhooks
+        lead_data = {
+            "lead_id": f"LEAD-{abs(hash(result.get('lead_email', '') + request.tenant_id)) % 100000:05d}",
+            "name": result.get("lead_name", ""),
+            "email": result.get("lead_email", ""),
+            "platform": result.get("lead_platform", ""),
+            "timestamp": datetime.utcnow().isoformat(),
+            "tenant_id": request.tenant_id
+        }
+        await trigger_webhooks(request.tenant_id, "lead.created", lead_data)
+
+    # 8. Extract response
     reply = next(
         (m.content for m in reversed(result["messages"]) if isinstance(m, AIMessage)),
         "Sorry, I encountered an issue. Please try again."
     )
+
+    # 9. Prepare extracted entities for test mode
+    extracted_entities = None
+    if request.test_mode:
+        extracted_entities = {
+            "intent": result.get("intent", ""),
+            "sentiment": result.get("sentiment", "neutral"),
+            "lead_name": result.get("lead_name", ""),
+            "lead_email": result.get("lead_email", ""),
+            "lead_platform": result.get("lead_platform", ""),
+            "collection_step": result.get("collection_step", ""),
+        }
 
     return ChatResponse(
         tenant_id=request.tenant_id,
@@ -236,6 +355,8 @@ async def chat(request: ChatRequest):
         sentiment=result.get("sentiment", "neutral"),
         lead_captured=result.get("lead_captured", False),
         turn_count=result.get("turn_count", 0),
+        extracted_entities=extracted_entities,
+        test_mode=request.test_mode,
     )
 
 
@@ -273,3 +394,194 @@ async def get_all_tenants():
         "total": len(tenants),
         "tenants": tenants,
     }
+
+
+# ─────────────────────────────────────────────
+# NEW ENDPOINTS FOR EXTENDED FUNCTIONALITY
+# ─────────────────────────────────────────────
+
+@app.get("/widget/config", response_model=WidgetConfigResponse)
+async def get_widget_config(
+    tenant_id: str = Query(..., description="Tenant ID for widget configuration")
+):
+    """
+    Get widget configuration for embedding the chat widget on external websites.
+
+    Returns theme, business name, and welcome message for the tenant.
+    """
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    return WidgetConfigResponse(
+        tenant_id=tenant_id,
+        theme="dark",  # Default theme, could be configurable later
+        business_name=tenant_config.get("business_name", ""),
+        welcome_message=f"Hello! I'm here to help you with {tenant_config.get('business_name', 'our services')}. How can I assist you today?"
+    )
+
+
+@app.post("/feedback")
+async def submit_feedback(request: FeedbackRequest):
+    """
+    Submit feedback for a chat interaction (thumbs up/down).
+
+    Used in test mode to collect feedback on agent responses.
+    """
+    from services.feedback_service import save_feedback
+
+    saved = save_feedback(
+        tenant_id=request.tenant_id,
+        message=request.message,
+        response=request.response,
+        rating=request.rating
+    )
+
+    return {"success": True, "feedback_id": saved["feedback_id"]}
+
+
+@app.get("/api-keys")
+async def get_api_key(
+    tenant_id: str = Query(..., description="Tenant ID to get API key for")
+):
+    """
+    Get the API key for a tenant (for external API access).
+    """
+    from services.api_key_service import get_api_key
+
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    api_key = get_api_key(tenant_id)
+    return ApiKeyResponse(
+        tenant_id=tenant_id,
+        api_key=api_key,
+        created_at=tenant_config.get("api_key_created_at", tenant_config.get("created_at", ""))
+    )
+
+
+@app.post("/api-keys")
+async def regenerate_api_key(
+    tenant_id: str = Query(..., description="Tenant ID to regenerate API key for")
+):
+    """
+    Regenerate the API key for a tenant.
+    """
+    from services.api_key_service import generate_api_key
+
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    api_key = generate_api_key(tenant_id)
+    return ApiKeyResponse(
+        tenant_id=tenant_id,
+        api_key=api_key,
+        created_at=datetime.utcnow().isoformat()
+    )
+
+
+@app.patch("/leads/{lead_id}")
+async def update_lead(
+    lead_id: str,
+    request: LeadUpdateRequest,
+    tenant_id: str = Query(..., description="Tenant ID the lead belongs to")
+):
+    """
+    Update a lead's status and/or add notes.
+    """
+    from services.lead_service import update_lead
+
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    updated = update_lead(tenant_id, lead_id, request.status, request.notes)
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Lead '{lead_id}' not found for tenant '{tenant_id}'."
+        )
+
+    return updated
+
+
+@app.post("/webhooks", response_model=WebhookResponse)
+async def create_webhook(
+    request: WebhookRequest,
+    tenant_id: str = Query(..., description="Tenant ID to create webhook for")
+):
+    """
+    Create a webhook for a tenant to receive events.
+    """
+    from services.webhook_service import create_webhook
+
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    webhook = create_webhook(tenant_id, request.url, request.events)
+    return WebhookResponse(**webhook)
+
+
+@app.get("/webhooks")
+async def get_webhooks(
+    tenant_id: str = Query(..., description="Tenant ID to get webhooks for")
+):
+    """
+    Get all webhooks for a tenant.
+    """
+    from services.webhook_service import get_webhooks
+
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    webhooks = get_webhooks(tenant_id)
+    return {"tenant_id": tenant_id, "webhooks": webhooks}
+
+
+@app.delete("/webhooks/{webhook_id}")
+async def delete_webhook(
+    webhook_id: str,
+    tenant_id: str = Query(..., description="Tenant ID the webhook belongs to")
+):
+    """
+    Delete a webhook.
+    """
+    from services.webhook_service import delete_webhook
+
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    success = delete_webhook(tenant_id, webhook_id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Webhook '{webhook_id}' not found for tenant '{tenant_id}'."
+        )
+
+    return {"success": True}
