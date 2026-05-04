@@ -129,6 +129,16 @@ def get_llm() -> GroqChat:
         raise ValueError(
             "GROQ_API_KEY is not configured. Set GROQ_API_KEY in Render env vars or .env."
         )
+
+    api_key = api_key.strip().strip('"').strip("'")
+    if api_key.lower().startswith("bearer "):
+        api_key = api_key[7:].strip()
+
+    if not api_key:
+        raise ValueError(
+            "GROQ_API_KEY is empty after normalization. Check your Render env value."
+        )
+
     return GroqChat(api_key=api_key)
 
 
