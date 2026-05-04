@@ -191,6 +191,26 @@ autostream-saas/
 
 ---
 
+## UI Blueprint
+
+- `Home` (`frontend/app/page.tsx`): landing page with product positioning and CTA to onboarding.
+- `Onboarding` (`frontend/app/onboarding/page.tsx`): tenant setup wizard for business details, FAQ/pricing, and tone configuration.
+- `Chat` (`frontend/app/chat/page.tsx`): real-time streaming conversation, message history, lead capture prompts, and client-side session sync.
+- `Leads` (`frontend/app/leads/page.tsx`): lead listing, filters, export actions, and tenant-specific records.
+- `Sidebar` (`frontend/components/layout/Sidebar.tsx`): primary navigation and tenant context switcher.
+- `ChatInput` (`frontend/components/chat/ChatInput.tsx`): input form with send action, validation, and loading state.
+- `MessageBubble` (`frontend/components/chat/MessageBubble.tsx`): user/bot message rendering with timestamps and streaming state.
+- `UI primitives` (`frontend/components/ui/*`): reusable Button, Card, Input, Label, Select, Spinner, Textarea.
+- `API adapter` (`frontend/lib/api.ts`): backend request wrapper for `/chat`, `/configure`, `/leads`, plus retry/error handling.
+
+UI design is optimized for:
+- mobile-first responsiveness
+- visible conversation state
+- fast tenant onboarding
+- clean lead review and export workflows
+
+---
+
 ## API Reference
 
 | Method | Endpoint | Description |
