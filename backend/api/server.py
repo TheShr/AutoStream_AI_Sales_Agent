@@ -11,6 +11,7 @@ Routes:
 All endpoints are tenant-scoped via tenant_id.
 """
 
+import logging
 import os
 import sys
 from typing import Optional, List, Any
@@ -34,6 +35,8 @@ from services.lead_service import save_lead, get_leads
 # ─────────────────────────────────────────────
 # APP SETUP
 # ─────────────────────────────────────────────
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 app = FastAPI(
     title="AI Sales Agent SaaS",
@@ -204,6 +207,18 @@ class WebhookResponse(BaseModel):
 # ─────────────────────────────────────────────
 # ROUTES
 # ─────────────────────────────────────────────
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request, exc: ValueError):
+    logging.error("ValueError during request: %s", exc, exc_info=True)
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+
+@app.exception_handler(RuntimeError)
+async def runtime_error_handler(request, exc: RuntimeError):
+    logging.error("RuntimeError during request: %s", exc, exc_info=True)
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
+
 
 @app.get("/health")
 async def health_check():

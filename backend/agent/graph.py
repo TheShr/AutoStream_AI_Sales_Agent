@@ -90,6 +90,8 @@ class GroqChat:
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8")
             raise RuntimeError(f"Groq API error: {exc.code} {body}") from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"Groq API network error: {exc.reason}") from exc
 
         return type("GroqResponse", (), {"content": self._extract_text(data)})
 
@@ -118,9 +120,15 @@ class GroqChat:
 
 
 def get_llm() -> GroqChat:
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = (
+        os.getenv("GROQ_API_KEY")
+        or os.getenv("GROQ_API")
+        or os.getenv("GROQ_KEY")
+    )
     if not api_key:
-        raise ValueError("GROQ_API_KEY not set in .env")
+        raise ValueError(
+            "GROQ_API_KEY is not configured. Set GROQ_API_KEY in Render env vars or .env."
+        )
     return GroqChat(api_key=api_key)
 
 
