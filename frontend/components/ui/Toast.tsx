@@ -1,5 +1,6 @@
 'use client';
 
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 type ToastProps = {
@@ -14,14 +15,57 @@ const variantStyles: Record<NonNullable<ToastProps['variant']>, string> = {
   info: 'bg-slate-800/90 border-white/10 text-slate-100',
 };
 
+type ToastContextType = {
+  showToast: (message: string, variant?: ToastProps['variant']) => void;
+};
+
+const ToastContext = createContext<ToastContextType | null>(null);
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toast, setToast] = useState<{ message: string; variant: ToastProps['variant'] } | null>(null);
+
+  const showToast = (message: string, variant: ToastProps['variant'] = 'info') => {
+    setToast({ message, variant });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      <AnimatePresence>
+        {toast ? (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-4 right-4 z-50"
+          >
+            <div className={`rounded-[1.5rem] border px-4 py-3 text-sm shadow-lg ${variantStyles[toast.variant || 'info']}`}>
+              {toast.message}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </ToastContext.Provider>
+  );
+}
+
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
+}
+
 export function Toast({ message, variant = 'info', onDismiss }: ToastProps) {
   return (
     <AnimatePresence>
       {message ? (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 16 }}
+          exit={{ opacity: 0, y: 50 }}
           className={`fixed bottom-6 left-1/2 z-50 w-[min(92vw,420px)] -translate-x-1/2 rounded-3xl border px-5 py-4 shadow-2xl shadow-black/20 ${variantStyles[variant]}`}
           role="status"
         >

@@ -2,29 +2,31 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Trash2 } from 'lucide-react';
+import { ArrowRight, Trash2, ThumbsUp, ThumbsDown, TestTube, Zap } from 'lucide-react';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Spinner } from '@/components/ui/Spinner';
-import { Toast } from '@/components/ui/Toast';
-import { sendMessage } from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { sendMessage, submitFeedback } from '@/lib/api';
 
 type ChatMessage = {
   id: string;
   role: 'user' | 'ai';
   text: string;
   status?: 'pending' | 'complete';
+  extractedEntities?: any;
 };
 
 const initialMessages: ChatMessage[] = [
   {
     id: 'welcome',
     role: 'ai',
-    text: 'Hello! Share your first sales question and I’ll help qualify leads, answer pricing, and describe your offering.',
+    text: 'Hello! Share your first sales question and I\'ll help qualify leads, answer pricing, and describe your offering.',
     status: 'complete',
   },
 ];
+
 
 export default function ChatPage() {
   const router = useRouter();
@@ -35,7 +37,8 @@ export default function ChatPage() {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string>('');
+  const { showToast } = useToast();
+  const [testMode, setTestMode] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -72,11 +75,6 @@ export default function ChatPage() {
     return 'Ready to continue the conversation.';
   }, [error, isSending]);
 
-  const showToast = (message: string, duration = 2400) => {
-    setToastMessage(message);
-    window.setTimeout(() => setToastMessage(''), duration);
-  };
-
   const handleSend = async () => {
     if (!tenantId || !input.trim()) return;
 
@@ -94,14 +92,19 @@ export default function ChatPage() {
     setError(null);
 
     try {
-      await sendMessage(tenantId, userId, userMessage.text, (partial) => {
+      const response = await sendMessage(tenantId, userId, userMessage.text, (partial) => {
         setMessages((current) =>
           current.map((message) => (message.id === aiId ? { ...message, text: partial } : message)),
         );
-      }).then((response) => {
+      }, testMode).then((response) => {
         setMessages((current) =>
           current.map((message) =>
-            message.id === aiId ? { ...message, text: response.message, status: 'complete' } : message,
+            message.id === aiId ? {
+              ...message,
+              text: response.response,
+              status: 'complete',
+              extractedEntities: response.extracted_entities
+            } : message,
           ),
         );
       });
@@ -125,14 +128,19 @@ export default function ChatPage() {
     setMessages((current) => current.map((message) => (message.id === messageId ? { ...message, text: 'Regenerating...', status: 'pending' } : message)));
 
     try {
-      await sendMessage(tenantId, userId, lastUserMessage.text, (partial) => {
+      const response = await sendMessage(tenantId, userId, lastUserMessage.text, (partial) => {
         setMessages((current) =>
           current.map((message) => (message.id === messageId ? { ...message, text: partial } : message)),
         );
-      }).then((response) => {
+      }, testMode).then((response) => {
         setMessages((current) =>
           current.map((message) =>
-            message.id === messageId ? { ...message, text: response.message, status: 'complete' } : message,
+            message.id === messageId ? {
+              ...message,
+              text: response.response,
+              status: 'complete',
+              extractedEntities: response.extracted_entities
+            } : message,
           ),
         );
       });
@@ -146,8 +154,27 @@ export default function ChatPage() {
     }
   };
 
-  const handleCopy = () => {
-    showToast('Copied to clipboard.');
+  const handleFeedback = async (messageId: string, rating: 1 | -1) => {
+    const message = messages.find(m => m.id === messageId);
+    const userMessage = messages.find(m => m.role === 'user' && messages.indexOf(m) < messages.indexOf(message!));
+
+    if (!message || !userMessage || !tenantId) return;
+
+    try {
+      await submitFeedback({
+        tenant_id: tenantId,
+        message: userMessage.text,
+        response: message.text,
+        rating
+      });
+      showToast(`Feedback ${rating === 1 ? '👍' : '👎'} submitted!`);
+    } catch (err) {
+      showToast('Failed to submit feedback');
+    }
+  };
+
+  const handleCopy = async () => {
+    showToast('Copied to clipboard!');
   };
 
   const handleClear = () => {
@@ -166,10 +193,26 @@ export default function ChatPage() {
       <section className="flex min-h-[calc(100vh-4rem)] flex-col gap-6 rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-soft">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.32em] text-violet-300">Live AI assistant</p>
-            <h1 className="text-3xl font-semibold text-white">Chat with your sales agent</h1>
+            <p className="text-sm uppercase tracking-[0.32em] text-violet-300">
+              {testMode ? 'Test Mode' : 'Live AI assistant'}
+            </p>
+            <h1 className="text-3xl font-semibold text-white">
+              {testMode ? 'Test your sales agent' : 'Chat with your sales agent'}
+            </h1>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setTestMode(!testMode)}
+              className={`inline-flex items-center gap-2 rounded-[1.5rem] border px-4 py-3 text-sm font-medium transition ${
+                testMode
+                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-200'
+                  : 'border-violet-500/50 bg-violet-500/10 text-violet-200'
+              }`}
+            >
+              {testMode ? <TestTube className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+              {testMode ? 'Test Mode' : 'Live Mode'}
+            </button>
             <button
               type="button"
               onClick={handleClear}
@@ -187,14 +230,44 @@ export default function ChatPage() {
         <div className="flex-1 overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 p-4">
           <div ref={messageListRef} className="flex h-full flex-col gap-4 overflow-auto pr-2 pb-4">
             {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                role={message.role}
-                text={message.text}
-                status={message.status}
-                onCopy={handleCopy}
-                onRegenerate={message.role === 'ai' ? () => handleRegenerate(message.id) : undefined}
-              />
+              <div key={message.id} className="space-y-3">
+                <MessageBubble
+                  role={message.role}
+                  text={message.text}
+                  status={message.status}
+                  onCopy={handleCopy}
+                  onRegenerate={message.role === 'ai' ? () => handleRegenerate(message.id) : undefined}
+                />
+                {message.role === 'ai' && testMode && message.extractedEntities && (
+                  <div className="ml-4 rounded-[1rem] border border-amber-500/20 bg-amber-500/5 p-4">
+                    <h4 className="text-sm font-medium text-amber-200">Extracted Entities (Test Mode)</h4>
+                    <div className="mt-2 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
+                      <div>Intent: <span className="font-mono text-amber-300">{message.extractedEntities.intent}</span></div>
+                      <div>Sentiment: <span className="font-mono text-amber-300">{message.extractedEntities.sentiment}</span></div>
+                      <div>Name: <span className="font-mono text-amber-300">{message.extractedEntities.lead_name || 'None'}</span></div>
+                      <div>Email: <span className="font-mono text-amber-300">{message.extractedEntities.lead_email || 'None'}</span></div>
+                      <div>Platform: <span className="font-mono text-amber-300">{message.extractedEntities.lead_platform || 'None'}</span></div>
+                      <div>Step: <span className="font-mono text-amber-300">{message.extractedEntities.collection_step}</span></div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleFeedback(message.id, 1)}
+                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs bg-green-500/20 text-green-300 hover:bg-green-500/30"
+                      >
+                        <ThumbsUp className="h-3 w-3" />
+                        Good
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(message.id, -1)}
+                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                      >
+                        <ThumbsDown className="h-3 w-3" />
+                        Poor
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
             {isSending ? (
               <div className="flex justify-start">
@@ -218,8 +291,6 @@ export default function ChatPage() {
           </div>
         </div>
       </section>
-
-      {toastMessage ? <Toast message={toastMessage} variant={error ? 'error' : 'success'} onDismiss={() => setToastMessage('')} /> : null}
     </main>
   );
 }
