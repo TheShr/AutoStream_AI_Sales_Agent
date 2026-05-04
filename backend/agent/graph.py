@@ -79,7 +79,9 @@ class GroqChat:
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
+                "Accept": "application/json",
                 "Authorization": f"Bearer {self.api_key}",
+                "User-Agent": "AutoStream-GroqClient/1.0",
             },
             method="POST",
         )
