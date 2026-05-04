@@ -1,13 +1,18 @@
 services:
   - type: web
     name: autostream-ai-sales-backend
-    env: python
+    env: docker
     plan: starter
     branch: main
     root: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    dockerfilePath: ./Dockerfile
     autoDeploy: true
     envVars:
       - key: GROQ_API_KEY
         sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: WEBHOOK_VERIFY_TOKEN
+        sync: false
+      - key: PORT
+        value: 8000
