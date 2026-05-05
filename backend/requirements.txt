@@ -18,6 +18,8 @@ redis>=5.0.0
 
 # Environment management
 python-dotenv>=1.0.0
+sqlalchemy>=2.0.0
+psycopg[binary]>=3.0
 
 # Testing
 pytest>=8.0.0

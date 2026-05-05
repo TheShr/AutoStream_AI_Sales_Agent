@@ -1,39 +1,42 @@
 """
 Lead Service
 ============
-Stores and retrieves captured leads per tenant.
-
-Storage: JSON files in ./data/leads/{tenant_id}.json
-Each file is a list of lead objects.
-
-Enhanced Lead schema:
-    {
-        "lead_id": "...",
-        "name": "...",
-        "email": "...",
-        "phone": "...",  # New field
-        "platform": "...",
-        "user_id": "...",
-        "intent": "...",  # New field
-        "score": "hot|warm|cold",  # New field
-        "status": "new|contacted|qualified|closed|lost",  # New field
-        "notes": "...",  # New field
-        "timestamp": "ISO8601",
-        "updated_at": "ISO8601"  # New field
-    }
+Stores and retrieves captured leads per tenant using PostgreSQL.
 """
 
-import json
-import os
 from datetime import datetime
 from typing import Optional, List
+from uuid import uuid4
 
-LEADS_DIR = os.path.join(os.path.dirname(__file__), "../data/leads")
+from sqlalchemy.exc import SQLAlchemyError
+
+from db import SessionLocal
+from models import Lead
 
 
-def _leads_path(tenant_id: str) -> str:
-    os.makedirs(LEADS_DIR, exist_ok=True)
-    return os.path.join(LEADS_DIR, f"{tenant_id}.json")
+def _calculate_lead_score(intent: str, name: str, email: str, phone: Optional[str]) -> str:
+    score = 0
+    intent_lower = (intent or "").lower()
+
+    if any(keyword in intent_lower for keyword in ["buy", "purchase", "pricing", "cost", "quote"]):
+        score += 3
+    elif any(keyword in intent_lower for keyword in ["info", "learn", "details", "more"]):
+        score += 2
+    elif any(keyword in intent_lower for keyword in ["contact", "call", "email"]):
+        score += 1
+
+    if name and name.strip():
+        score += 1
+    if email and "@" in email:
+        score += 1
+    if phone and phone.strip():
+        score += 1
+
+    if score >= 5:
+        return "hot"
+    elif score >= 3:
+        return "warm"
+    return "cold"
 
 
 def save_lead(
@@ -45,143 +48,136 @@ def save_lead(
     phone: Optional[str] = None,
     intent: Optional[str] = None,
 ) -> dict:
-    """
-    Persist a captured lead for a tenant.
+    """Persist a captured lead for a tenant."""
+    with SessionLocal() as session:
+        try:
+            lead = (
+                session.query(Lead)
+                .filter_by(tenant_id=tenant_id, email=email)
+                .one_or_none()
+            )
+            now = datetime.utcnow()
+            score = _calculate_lead_score(intent or "", name, email, phone)
 
-    Args:
-        tenant_id: The tenant this lead belongs to
-        name, email, platform: Lead fields
-        user_id: Optional originating session user
-        phone: Optional phone number
-        intent: Optional detected intent
+            if lead:
+                lead.name = name or lead.name
+                lead.phone = phone or lead.phone
+                lead.platform = platform or lead.platform
+                lead.user_id = user_id or lead.user_id
+                lead.intent = intent or lead.intent
+                lead.score = score
+                lead.status = "new"
+                lead.updated_at = now
+            else:
+                lead = Lead(
+                    lead_id=str(uuid4()),
+                    tenant_id=tenant_id,
+                    name=name,
+                    email=email,
+                    phone=phone or "",
+                    platform=platform or "",
+                    user_id=user_id,
+                    intent=intent or "",
+                    score=score,
+                    status="new",
+                    notes="",
+                    created_at=now,
+                    updated_at=now,
+                )
+                session.add(lead)
 
-    Returns:
-        The saved lead dict
-    """
-    path = _leads_path(tenant_id)
-    leads = _load_raw(path)
+            session.commit()
+            session.refresh(lead)
 
-    now = datetime.utcnow().isoformat()
-    lead_id = f"LEAD-{abs(hash(email + tenant_id + str(datetime.utcnow()))) % 100000:05d}"
-
-    # Score the lead based on intent and other factors
-    score = _calculate_lead_score(intent or "", name, email, phone)
-
-    lead = {
-        "lead_id": lead_id,
-        "name": name,
-        "email": email,
-        "phone": phone or "",
-        "platform": platform,
-        "user_id": user_id,
-        "intent": intent or "",
-        "score": score,
-        "status": "new",
-        "notes": "",
-        "timestamp": now,
-        "updated_at": now,
-    }
-    leads.append(lead)
-
-    with open(path, "w") as f:
-        json.dump(leads, f, indent=2)
-
-    print(f"[LeadService] Lead saved for tenant '{tenant_id}': {name} <{email}> (score: {score})")
-    return lead
+            return {
+                "lead_id": lead.lead_id,
+                "tenant_id": lead.tenant_id,
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "platform": lead.platform,
+                "user_id": lead.user_id,
+                "intent": lead.intent,
+                "score": lead.score,
+                "status": lead.status,
+                "notes": lead.notes,
+                "created_at": lead.created_at.isoformat(),
+                "updated_at": lead.updated_at.isoformat(),
+            }
+        except SQLAlchemyError as exc:
+            session.rollback()
+            raise RuntimeError(f"Unable to save lead: {exc}") from exc
 
 
-def update_lead(
+def update_lead_status(
     tenant_id: str,
     lead_id: str,
     status: Optional[str] = None,
     notes: Optional[str] = None,
 ) -> Optional[dict]:
-    """
-    Update a lead's status and/or notes.
-
-    Args:
-        tenant_id: The tenant the lead belongs to
-        lead_id: The ID of the lead to update
-        status: New status (optional)
-        notes: New notes (optional)
-
-    Returns:
-        The updated lead dict, or None if not found
-    """
-    path = _leads_path(tenant_id)
-    leads = _load_raw(path)
-
-    for lead in leads:
-        if lead.get("lead_id") == lead_id:
-            if status is not None:
-                lead["status"] = status
-            if notes is not None:
-                lead["notes"] = notes
-            lead["updated_at"] = datetime.utcnow().isoformat()
-
-            with open(path, "w") as f:
-                json.dump(leads, f, indent=2)
-
-            print(f"[LeadService] Lead updated for tenant '{tenant_id}': {lead_id} (status: {status})")
-            return lead
-
-    return None
-
-
-def get_leads(tenant_id: str) -> List[dict]:
-    """
-    Retrieve all leads for a tenant.
-
-    Returns:
-        List of lead dicts, newest first
-    """
-    path = _leads_path(tenant_id)
-    leads = _load_raw(path)
-    return sorted(leads, key=lambda x: x.get("timestamp", ""), reverse=True)
-
-
-def _calculate_lead_score(intent: str, name: str, email: str, phone: Optional[str]) -> str:
-    """
-    Calculate lead score based on intent, completeness, and other factors.
-
-    Returns:
-        "hot", "warm", or "cold"
-    """
-    score = 0
-
-    # Intent-based scoring
-    intent_lower = intent.lower()
-    if any(keyword in intent_lower for keyword in ["buy", "purchase", "pricing", "cost", "quote"]):
-        score += 3
-    elif any(keyword in intent_lower for keyword in ["info", "learn", "details", "more"]):
-        score += 2
-    elif any(keyword in intent_lower for keyword in ["contact", "call", "email"]):
-        score += 1
-
-    # Completeness scoring
-    if name and name.strip():
-        score += 1
-    if email and "@" in email:
-        score += 1
-    if phone and phone.strip():
-        score += 1
-
-    # Determine final score
-    if score >= 5:
-        return "hot"
-    elif score >= 3:
-        return "warm"
-    else:
-        return "cold"
-
-
-def _load_raw(path: str) -> list:
-    """Load leads JSON or return empty list if file doesn't exist."""
-    if not os.path.exists(path):
-        return []
-    with open(path, "r") as f:
+    with SessionLocal() as session:
         try:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-        except json.JSONDecodeError:
-            return []
+            lead = (
+                session.query(Lead)
+                .filter_by(tenant_id=tenant_id, lead_id=lead_id)
+                .one_or_none()
+            )
+            if not lead:
+                return None
+
+            if status is not None:
+                lead.status = status
+            if notes is not None:
+                lead.notes = notes
+            lead.updated_at = datetime.utcnow()
+            session.commit()
+            session.refresh(lead)
+            return {
+                "lead_id": lead.lead_id,
+                "tenant_id": lead.tenant_id,
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "platform": lead.platform,
+                "user_id": lead.user_id,
+                "intent": lead.intent,
+                "score": lead.score,
+                "status": lead.status,
+                "notes": lead.notes,
+                "created_at": lead.created_at.isoformat(),
+                "updated_at": lead.updated_at.isoformat(),
+            }
+        except SQLAlchemyError as exc:
+            session.rollback()
+            raise RuntimeError(f"Unable to update lead: {exc}") from exc
+
+
+def get_leads(tenant_id: str, limit: int = 100, offset: int = 0) -> List[dict]:
+    """Retrieve leads for a tenant with pagination."""
+    with SessionLocal() as session:
+        leads = (
+            session.query(Lead)
+            .filter_by(tenant_id=tenant_id)
+            .order_by(Lead.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "lead_id": lead.lead_id,
+                "tenant_id": lead.tenant_id,
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "platform": lead.platform,
+                "user_id": lead.user_id,
+                "intent": lead.intent,
+                "score": lead.score,
+                "status": lead.status,
+                "notes": lead.notes,
+                "created_at": lead.created_at.isoformat(),
+                "updated_at": lead.updated_at.isoformat(),
+            }
+            for lead in leads
+        ]

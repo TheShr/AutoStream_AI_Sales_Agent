@@ -402,14 +402,15 @@ async def chat(request: ChatRequest, authorization: Optional[str] = None):
 
 @app.get("/leads")
 async def get_tenant_leads(
-    tenant_id: str = Query(..., description="Tenant ID to fetch leads for")
+    tenant_id: str = Query(..., description="Tenant ID to fetch leads for"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum leads to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
 ):
     """
-    Return all captured leads for a tenant, newest first.
+    Return captured leads for a tenant with pagination.
 
-    Query param: ?tenant_id=gympro
+    Query params: ?tenant_id=gympro&limit=50&offset=0
     """
-    # Verify tenant exists
     tenant_config = load_tenant(tenant_id)
     if not tenant_config:
         raise HTTPException(
@@ -417,7 +418,7 @@ async def get_tenant_leads(
             detail=f"Tenant '{tenant_id}' not found."
         )
 
-    leads = get_leads(tenant_id)
+    leads = get_leads(tenant_id, limit=limit, offset=offset)
     return {
         "tenant_id": tenant_id,
         "business_name": tenant_config.get("business_name"),
