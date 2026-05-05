@@ -44,12 +44,14 @@ app = FastAPI(
     version="2.0.0",
 )
 
+cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
+allow_all_origins = not cors_origins or "*" in cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(","),
+    allow_origins=["*"] if allow_all_origins else cors_origins,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
-    allow_credentials=True,
+    allow_credentials=not allow_all_origins,
 )
 
 # Compile graph once at startup
