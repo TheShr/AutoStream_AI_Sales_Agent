@@ -45,14 +45,26 @@ app = FastAPI(
 )
 
 cors_origins = [origin.strip().rstrip("/") for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
-allow_all_origins = not cors_origins or "*" in cors_origins
+cors_origin_regex = os.getenv("CORS_ORIGIN_REGEX", "").strip()
+
+# Use regex when configured for Vercel deployments; otherwise allow explicit origins.
+if cors_origin_regex:
+    allow_origins = []
+    allow_origin_regex = cors_origin_regex
+elif cors_origins:
+    allow_origins = cors_origins
+    allow_origin_regex = None
+else:
+    allow_origins = []
+    allow_origin_regex = r"https://.*\.vercel\.app"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if allow_all_origins else cors_origins,
-    allow_origin_regex=r".*" if allow_all_origins else None,
+    allow_origins=allow_origins,
+    allow_origin_regex=allow_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
 )
 
 # Compile graph once at startup
