@@ -127,7 +127,13 @@ class GroqChat:
 
         output = payload.get("output")
         if isinstance(output, list) and output:
-            # Prefer assistant message content, but fall back to any output text.
+            # Prefer assistant message content over reasoning or other outputs.
+            for item in output:
+                if isinstance(item, dict) and item.get("type") == "message":
+                    text = parse_content(item.get("content") or item)
+                    if text:
+                        return text
+            # Fallback: any output with text.
             for item in output:
                 if isinstance(item, dict):
                     text = parse_content(item.get("content") or item)
