@@ -270,3 +270,13 @@ export async function deleteWebhook(tenant_id: string, webhook_id: string) {
 
   return response.json();
 }
+
+export async function getAnalytics(tenant_id: string) {
+  const response = await fetch(`${API_BASE}/analytics?tenant_id=${encodeURIComponent(tenant_id)}`);
+
+  if (!response.ok) {
+    return handleResponseError(response, 'Unable to load analytics.');
+  }
+
+  return response.json();
+}

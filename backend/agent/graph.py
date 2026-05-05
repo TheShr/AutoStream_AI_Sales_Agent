@@ -13,6 +13,7 @@ Changes from v1:
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from typing import TypedDict, Annotated, Optional, Any
@@ -74,28 +75,38 @@ class GroqChat:
             "max_output_tokens": self.max_tokens,
         }
 
-        request = urllib.request.Request(
-            "https://api.groq.com/openai/v1/responses",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": f"Bearer {self.api_key}",
-                "User-Agent": "AutoStream-GroqClient/1.0",
-            },
-            method="POST",
-        )
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                request = urllib.request.Request(
+                    "https://api.groq.com/openai/v1/responses",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "Authorization": f"Bearer {self.api_key}",
+                        "User-Agent": "AutoStream-GroqClient/1.0",
+                    },
+                    method="POST",
+                )
 
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                data = json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8")
-            raise RuntimeError(f"Groq API error: {exc.code} {body}") from exc
-        except urllib.error.URLError as exc:
-            raise RuntimeError(f"Groq API network error: {exc.reason}") from exc
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    data = json.loads(response.read().decode("utf-8"))
+                return type("GroqResponse", (), {"content": self._extract_text(data)})
 
-        return type("GroqResponse", (), {"content": self._extract_text(data)})
+            except urllib.error.HTTPError as exc:
+                if exc.code >= 500 and attempt < max_retries - 1:  # Retry on server errors
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+                body = exc.read().decode("utf-8")
+                raise RuntimeError(f"Groq API error: {exc.code} {body}") from exc
+            except urllib.error.URLError as exc:
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+                raise RuntimeError(f"Groq API network error: {exc.reason}") from exc
+
+        raise RuntimeError("Failed to get response from Groq API after retries")
 
     def _message_to_input(self, message: Any) -> dict[str, str]:
         if isinstance(message, SystemMessage):

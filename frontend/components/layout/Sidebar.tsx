@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { CheckSquare, LayoutGrid, MessageCircle, Plus, Repeat, Zap } from 'lucide-react';
+import { CheckSquare, LayoutGrid, MessageCircle, Plus, Repeat, Zap, BarChart3, Settings } from 'lucide-react';
 import clsx from 'clsx';
 
 type TenantItem = {
@@ -48,6 +48,9 @@ export function Sidebar({ tenantName, onNewChat }: SidebarProps) {
     () => [
       { href: '/chat', label: 'Chat', icon: MessageCircle },
       { href: '/leads', label: 'Leads', icon: CheckSquare },
+      { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+      { href: '/settings/api', label: 'API Settings', icon: Settings },
+      { href: '/deploy', label: 'Deploy', icon: Zap },
       { href: '/onboarding', label: 'Onboarding', icon: LayoutGrid },
     ],
     [],

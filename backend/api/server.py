@@ -333,6 +333,10 @@ async def chat(request: ChatRequest, authorization: Optional[str] = None):
             intent=result.get("intent", ""),
         )
 
+        # Track analytics
+        from services.analytics_service import track_lead
+        track_lead(request.tenant_id)
+
         # Trigger webhooks for lead.created event
         from services.webhook_service import trigger_webhooks
         lead_data = {
@@ -351,7 +355,12 @@ async def chat(request: ChatRequest, authorization: Optional[str] = None):
         "Sorry, I encountered an issue. Please try again."
     )
 
-    # 9. Prepare extracted entities for test mode
+    # 9. Track chat analytics (only for non-test mode)
+    if not request.test_mode:
+        from services.analytics_service import track_chat
+        track_chat(request.tenant_id)
+
+    # 10. Prepare extracted entities for test mode
     extracted_entities = None
     if request.test_mode:
         extracted_entities = {
@@ -601,3 +610,23 @@ async def delete_webhook(
         )
 
     return {"success": True}
+
+
+@app.get("/analytics")
+async def get_analytics(
+    tenant_id: str = Query(..., description="Tenant ID to get analytics for")
+):
+    """
+    Get usage analytics for a tenant.
+    """
+    from services.analytics_service import get_analytics
+
+    tenant_config = load_tenant(tenant_id)
+    if not tenant_config:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tenant '{tenant_id}' not found."
+        )
+
+    analytics = get_analytics(tenant_id)
+    return analytics
