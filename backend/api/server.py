@@ -17,7 +17,7 @@ import sys
 from typing import Optional, List, Any
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,7 +49,7 @@ allow_all_origins = not cors_origins or "*" in cors_origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if allow_all_origins else cors_origins,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=not allow_all_origins,
 )
@@ -231,6 +231,11 @@ async def health_check():
         "version": "2.0.0",
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+@app.options("/{path_name:path}")
+async def preflight_handler(path_name: str):
+    return Response(status_code=204)
 
 
 @app.post("/configure", response_model=ConfigureResponse)
