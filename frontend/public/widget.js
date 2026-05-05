@@ -9,13 +9,21 @@
   // Configuration - will be set by the script tag data attributes
   const WIDGET_ID = 'ai-sales-agent-widget';
 
-  // Get API base from script tag or use default
+  // Get API base from script tag or infer from widget host
   function getApiBase() {
-    const script = document.currentScript || document.querySelector('script[data-tenant]');
+    const script =
+      document.currentScript ||
+      document.querySelector('script[data-tenant]') ||
+      document.querySelector('script[src$="/widget.js"]');
+
     if (script) {
       const apiUrl = script.getAttribute('data-api-url');
       if (apiUrl) return apiUrl;
+      if (script.src) {
+        return script.src.replace(/\/widget\.js(?:\?.*)?$/, '');
+      }
     }
+
     // Fallback to current domain
     return window.location.origin;
   }

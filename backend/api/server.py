@@ -234,11 +234,6 @@ async def health_check():
     }
 
 
-@app.options("/{path_name:path}")
-async def preflight_handler(path_name: str):
-    return Response(status_code=204)
-
-
 @app.post("/configure", response_model=ConfigureResponse)
 async def configure_tenant(request: ConfigureRequest):
     """
