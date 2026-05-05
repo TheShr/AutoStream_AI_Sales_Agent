@@ -3,32 +3,75 @@
  * Self-contained chat widget for website embedding
  */
 
-(function() {
+(function initWidget() {
   'use strict';
 
   // Configuration - will be set by the script tag data attributes
   const WIDGET_ID = 'ai-sales-agent-widget';
 
-  // Get API base from script tag or infer from widget host
-  function getApiBase() {
-    const script =
-      document.currentScript ||
-      document.querySelector('script[data-tenant]') ||
-      document.querySelector('script[src$="/widget.js"]');
-
-    if (script) {
-      const apiUrl = script.getAttribute('data-api-url');
-      if (apiUrl) return apiUrl;
-      if (script.src) {
-        return script.src.replace(/\/widget\.js(?:\?.*)?$/, '');
-      }
+  // Safely resolve the current script element
+  function getCurrentScriptSafe() {
+    // Try document.currentScript first (most reliable when script is synchronous)
+    if (document.currentScript) {
+      return document.currentScript;
     }
 
-    // Fallback to current domain
-    return window.location.origin;
+    // Fallback: find script by data-tenant attribute
+    const scriptByTenant = document.querySelector('script[data-tenant]');
+    if (scriptByTenant) {
+      return scriptByTenant;
+    }
+
+    // Fallback: find script by src containing widget.js
+    const scriptBySrc = document.querySelector('script[src*="widget.js"]');
+    if (scriptBySrc) {
+      return scriptBySrc;
+    }
+
+    return null;
   }
 
-  const API_BASE = getApiBase();
+  // Extract configuration from script attributes
+  function extractWidgetConfig() {
+    const script = getCurrentScriptSafe();
+
+    if (!script) {
+      console.error('[AutoStream Widget] Could not find widget script element. Make sure the script tag has data-tenant attribute or src contains "widget.js"');
+      return null;
+    }
+
+    const tenantId = script.getAttribute('data-tenant');
+    if (!tenantId) {
+      console.error('[AutoStream Widget] data-tenant attribute is required on the script tag');
+      return null;
+    }
+
+    const apiUrl = script.getAttribute('data-api-url');
+    let apiBase;
+
+    if (apiUrl) {
+      apiBase = apiUrl;
+    } else if (script.src) {
+      // Infer API base from script src (remove /widget.js and query params)
+      apiBase = script.src.replace(/\/widget\.js(?:\?.*)?$/, '');
+    } else {
+      // Final fallback to current domain
+      apiBase = window.location.origin;
+    }
+
+    return { tenantId, apiBase };
+  }
+
+  // Get widget configuration
+  const config = extractWidgetConfig();
+  if (!config) {
+    return; // Exit early if configuration failed
+  }
+
+  const { tenantId, apiBase: API_BASE } = config;
+
+  // Debug log (only once)
+  console.log('[AutoStream Widget] Initialized', { tenantId, apiBase: API_BASE });
 
   // Utility functions
   function createElement(tag, attrs = {}, children = []) {
@@ -386,14 +429,6 @@
 
   // Initialize widget when DOM is ready
   function initWidget() {
-    const script = document.currentScript;
-    const tenantId = script.getAttribute('data-tenant');
-
-    if (!tenantId) {
-      console.error('AI Sales Agent Widget: data-tenant attribute is required');
-      return;
-    }
-
     // Fetch widget config
     fetch(`${API_BASE}/widget/config?tenant_id=${encodeURIComponent(tenantId)}`)
       .then(response => {
@@ -406,7 +441,7 @@
         new SalesAgentWidget(config);
       })
       .catch(error => {
-        console.error('AI Sales Agent Widget initialization failed:', error);
+        console.error('[AutoStream Widget] Initialization failed:', error);
       });
   }
 
