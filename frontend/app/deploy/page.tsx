@@ -31,8 +31,13 @@ export default function DeployPage() {
 
   useEffect(() => {
     if (config && typeof window !== 'undefined') {
-      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://autostream-ai-sales-agent.onrender.com';
-      const widgetUrl = 'https://auto-stream-ai-sales-agent.vercel.app';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        process.env.NEXT_PUBLIC_WIDGET_API_URL ||
+        'https://autostream-ai-sales-agent.onrender.com';
+      const widgetUrl =
+        process.env.NEXT_PUBLIC_WIDGET_HOST ||
+        'https://auto-stream-ai-sales-agent.vercel.app';
       setEmbedScript(`<script src="${widgetUrl}/widget.js" data-tenant="${config.tenant_id}" data-api-url="${apiUrl}"></script>`);
       setPreviewUrl(`${window.location.origin}/preview?tenant=${config.tenant_id}`);
     }
