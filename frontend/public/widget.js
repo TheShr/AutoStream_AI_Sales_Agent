@@ -122,174 +122,261 @@
     createStyles() {
       const style = createElement('style', {}, [`
         #${WIDGET_ID} {
-          --primary: #8b5cf6;
-          --primary-dark: #7c3aed;
-          --background: #0f0f0f;
-          --foreground: #ffffff;
-          --muted: #1f1f1f;
-          --border: #2a2a2a;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          --primary: #5b21b6;
+          --primary-strong: #7c3aed;
+          --surface: rgba(255, 255, 255, 0.94);
+          --surface-strong: rgba(248, 250, 252, 0.98);
+          --surface-soft: rgba(243, 244, 246, 0.9);
+          --border: rgba(15, 23, 42, 0.08);
+          --shadow: 0 28px 80px rgba(15, 23, 42, 0.18), 0 8px 24px rgba(15, 23, 42, 0.08);
+          --text: #111827;
+          --muted-text: #4b5563;
+          --agent-bg: #f8fafc;
+          --user-bg: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-size: 14px;
+          color: var(--text);
         }
 
         #${WIDGET_ID} .widget-button {
           position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 60px;
-          height: 60px;
+          inset: auto 24px 24px auto;
+          width: 62px;
+          height: 62px;
           border-radius: 50%;
-          background: var(--primary);
+          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
           border: none;
           color: white;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          z-index: 9999;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
+          box-shadow: 0 22px 48px rgba(79, 70, 229, 0.18);
+          z-index: 99999;
+          transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+          display: grid;
+          place-items: center;
+          outline: none;
         }
 
-        #${WIDGET_ID} .widget-button:hover {
-          background: var(--primary-dark);
-          transform: scale(1.05);
+        #${WIDGET_ID} .widget-button:hover,
+        #${WIDGET_ID} .widget-button:focus-visible {
+          transform: translateY(-2px);
+          box-shadow: 0 26px 60px rgba(79, 70, 229, 0.22);
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        #${WIDGET_ID} .widget-button-label {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          line-height: 1;
         }
 
         #${WIDGET_ID} .widget-panel {
           position: fixed;
-          bottom: 90px;
-          right: 20px;
-          width: 350px;
-          height: 500px;
-          background: var(--background);
+          right: 24px;
+          bottom: 100px;
+          width: min(380px, calc(100vw - 32px));
+          max-width: 380px;
+          height: min(540px, calc(100vh - 120px));
+          background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-          z-index: 9998;
-          display: none;
+          border-radius: 24px;
+          box-shadow: var(--shadow);
+          z-index: 99998;
+          display: flex;
           flex-direction: column;
           overflow: hidden;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(18px) scale(0.98);
+          transition: opacity 0.26s ease, transform 0.26s ease, visibility 0.26s ease;
+          backdrop-filter: blur(16px);
         }
 
         #${WIDGET_ID} .widget-panel.open {
-          display: flex;
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0) scale(1);
         }
 
         #${WIDGET_ID} .widget-header {
-          padding: 16px;
+          padding: 18px 20px;
+          background: rgba(255, 255, 255, 0.82);
           border-bottom: 1px solid var(--border);
-          background: var(--muted);
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 12px;
         }
 
         #${WIDGET_ID} .widget-title {
-          font-weight: 600;
-          color: var(--foreground);
+          font-size: 16px;
+          font-weight: 700;
           margin: 0;
+          color: var(--text);
+          line-height: 1.2;
         }
 
         #${WIDGET_ID} .widget-close {
-          background: none;
-          border: none;
-          color: var(--foreground);
+          background: rgba(15, 23, 42, 0.04);
+          border: 1px solid transparent;
+          color: var(--text);
           cursor: pointer;
-          font-size: 20px;
-          padding: 4px;
-          border-radius: 4px;
+          font-size: 18px;
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          transition: background 0.2s ease, transform 0.2s ease;
         }
 
-        #${WIDGET_ID} .widget-close:hover {
-          background: rgba(255, 255, 255, 0.1);
+        #${WIDGET_ID} .widget-close:hover,
+        #${WIDGET_ID} .widget-close:focus-visible {
+          background: rgba(79, 70, 229, 0.1);
+          transform: translateY(-1px);
         }
 
         #${WIDGET_ID} .widget-messages {
           flex: 1;
           overflow-y: auto;
-          padding: 16px;
+          padding: 18px 18px 10px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 14px;
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
         }
 
         #${WIDGET_ID} .message {
-          max-width: 80%;
-          padding: 12px 16px;
-          border-radius: 16px;
+          max-width: 82%;
+          min-width: 80px;
+          padding: 14px 18px;
+          border-radius: 22px;
           font-size: 14px;
-          line-height: 1.4;
+          line-height: 1.65;
+          white-space: pre-wrap;
+          word-break: break-word;
+          box-shadow: 0 14px 40px rgba(15, 23, 42, 0.05);
+          animation: widgetMessageFade 0.28s ease;
         }
 
         #${WIDGET_ID} .message.agent {
-          background: var(--muted);
-          color: var(--foreground);
           align-self: flex-start;
+          background: var(--agent-bg);
+          color: var(--text);
         }
 
         #${WIDGET_ID} .message.user {
-          background: var(--primary);
-          color: white;
           align-self: flex-end;
+          background: var(--user-bg);
+          color: #fff;
+          box-shadow: 0 18px 40px rgba(79, 70, 229, 0.12);
+        }
+
+        #${WIDGET_ID} .message.typing {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-style: normal;
+          color: var(--muted-text);
+          background: rgba(243, 244, 246, 0.92);
+          border-radius: 20px;
+          box-shadow: none;
+        }
+
+        #${WIDGET_ID} .message.typing::before {
+          content: '';
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #c7d2fe;
+          animation: widgetTypingPulse 1.4s infinite ease-in-out;
         }
 
         #${WIDGET_ID} .widget-input-area {
-          padding: 16px;
+          position: relative;
+          padding: 18px 20px 20px;
           border-top: 1px solid var(--border);
-          background: var(--background);
+          background: rgba(255, 255, 255, 0.92);
         }
 
         #${WIDGET_ID} .widget-input {
           width: 100%;
-          padding: 12px 16px;
-          border: 1px solid var(--border);
-          border-radius: 24px;
-          background: var(--muted);
-          color: var(--foreground);
+          min-height: 44px;
+          padding: 16px 58px 16px 18px;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          border-radius: 18px;
+          background: #ffffff;
+          color: var(--text);
           font-size: 14px;
+          line-height: 1.6;
           outline: none;
           resize: none;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         #${WIDGET_ID} .widget-input:focus {
-          border-color: var(--primary);
+          border-color: rgba(124, 58, 237, 0.5);
+          box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
         }
 
         #${WIDGET_ID} .widget-send {
           position: absolute;
-          right: 24px;
+          right: 22px;
           bottom: 24px;
-          background: var(--primary);
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
           border: none;
-          color: white;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
+          background: var(--primary);
+          color: #fff;
           cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: grid;
+          place-items: center;
           font-size: 16px;
+          transition: background 0.2s ease, transform 0.2s ease;
         }
 
-        #${WIDGET_ID} .widget-send:hover {
-          background: var(--primary-dark);
+        #${WIDGET_ID} .widget-send:hover,
+        #${WIDGET_ID} .widget-send:focus-visible {
+          background: #8b5cf6;
+          transform: translateY(-1px);
         }
 
-        #${WIDGET_ID} .typing {
-          display: none;
-          font-style: italic;
-          color: #888;
-          font-size: 14px;
+        #${WIDGET_ID} .widget-send:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
         }
 
-        @media (max-width: 480px) {
+        @keyframes widgetMessageFade {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes widgetTypingPulse {
+          0%, 80%, 100% { opacity: 0.35; }
+          40% { opacity: 1; }
+        }
+
+        @media (max-width: 540px) {
+          #${WIDGET_ID} .widget-button {
+            right: 16px;
+            bottom: 16px;
+          }
+
           #${WIDGET_ID} .widget-panel {
-            width: calc(100vw - 40px);
-            height: calc(100vh - 140px);
-            bottom: 90px;
-            right: 20px;
+            right: 12px;
+            bottom: 12px;
+            width: calc(100vw - 24px);
+            max-width: none;
+            height: calc(100vh - 24px);
+            border-radius: 20px;
+          }
+
+          #${WIDGET_ID} .widget-input-area {
+            padding: 16px 16px 22px;
           }
         }
       `]);
@@ -302,7 +389,7 @@
       this.button = createElement('button', {
         className: 'widget-button',
         'aria-label': 'Open chat'
-      }, ['💬']);
+      }, [createElement('span', { className: 'widget-button-label' }, ['Chat'])]);
       document.body.appendChild(this.button);
 
       // Panel
