@@ -7,25 +7,20 @@
 
 ---
 
+## 🎬 Demo
+
+[![Watch the Demo](https://img.shields.io/badge/▶%20Watch%20Demo-YouTube-red?logo=youtube&logoColor=white)](https://youtu.be/O-GV2r_y5W0)
+
+> See AutoStream in action — multi-tenant AI sales conversations, lead capture, and real-time analytics.
+
+---
+
 ## Overview
 
 **AutoStream** is a production-ready multi-tenant AI Sales Agent platform. Each tenant gets a personalized AI agent trained on their FAQs and pricing, a real-time streaming chat UI, an autonomous lead capture engine, and complete data isolation.
 
 **Use Cases:** SaaS white-labeling · Enterprise sales qualification · E-Commerce support · Lead generation · Website chat widgets
 
----
-
-## Demo Video
-
-<p align="center">
-  <a href="https://youtu.be/O-GV2r_y5W0">
-    <img 
-      src="./assets/demo-preview.gif" 
-      alt="AutoStream Demo Video"
-      width="100%"
-    />
-  </a>
-</p>
 ---
 
 ## Architecture
@@ -294,8 +289,6 @@ autostream-saas/
 
 ## UI Blueprint
 
-## UI Blueprint
-
 - `Home` (`frontend/app/page.tsx`): landing page with product positioning and CTA to onboarding.
 - `Onboarding` (`frontend/app/onboarding/page.tsx`): tenant setup wizard for business details, FAQ/pricing, and tone configuration.
 - `Chat` (`frontend/app/chat/page.tsx`): real-time streaming conversation, message history, lead capture prompts, test mode, and feedback ratings.
@@ -416,4 +409,3 @@ Load Balancer → [API-1, API-2, API-3] → Redis Cluster → DB sharded by tena
 - [x] Lead status management · CSV export · Real-time metrics
 - [ ] Webhooks (Zapier/Make) · Slack/Teams integration · Lead scoring ML · A/B testing
 - [ ] SSO (OAuth2/SAML) · Custom domains · RBAC · SOC2/HIPAA compliance
-
