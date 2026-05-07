@@ -15,6 +15,28 @@
 
 ---
 
+## Demo Video
+
+<p align="center">
+  <video src="https://your-demo-video-url.mp4"
+         controls
+         autoplay
+         muted
+         loop
+         width="100%">
+  </video>
+</p>
+
+### Alternative (GIF Preview + Clickable Video)
+
+<p align="center">
+  <a href="https://youtu.be/O-GV2r_y5W0">
+    <img src="./assets/demo-preview.gif" alt="AutoStream Demo" width="100%" />
+  </a>
+</p>
+
+---
+
 ## Architecture
 
 ```
