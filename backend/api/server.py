@@ -55,8 +55,9 @@ elif cors_origins:
     allow_origins = cors_origins
     allow_origin_regex = None
 else:
-    allow_origins = []
-    allow_origin_regex = r"https://.*\.vercel\.app"
+    # Development fallback for embeddable widget integrations
+    allow_origins = ["*"]
+    allow_origin_regex = None
 
 if allow_null_origin:
     if allow_origin_regex:
