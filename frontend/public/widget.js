@@ -122,6 +122,7 @@
     createStyles() {
       const style = createElement('style', {}, [`
         #${WIDGET_ID} {
+          all: initial;
           --primary: #5b21b6;
           --primary-strong: #7c3aed;
           --surface: rgba(255, 255, 255, 0.94);
@@ -385,12 +386,18 @@
     }
 
     createWidget() {
+      // Create root container
+      this.root = createElement('div', {
+        id: WIDGET_ID
+      });
+      document.body.appendChild(this.root);
+
       // Button
       this.button = createElement('button', {
         className: 'widget-button',
         'aria-label': 'Open chat'
       }, [createElement('span', { className: 'widget-button-label' }, ['Chat'])]);
-      document.body.appendChild(this.button);
+      this.root.appendChild(this.button);
 
       // Panel
       this.panel = createElement('div', {
@@ -422,7 +429,7 @@
         ])
       ]);
 
-      document.body.appendChild(this.panel);
+      this.root.appendChild(this.panel);
 
       // Get references
       this.messagesContainer = this.panel.querySelector('.widget-messages');
