@@ -2,7 +2,6 @@
 
 import { FormEvent, KeyboardEvent } from 'react';
 import { ArrowUp } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 
 type ChatInputProps = {
@@ -43,14 +42,14 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
           rows={1}
           className="min-h-[46px] max-h-[96px] w-full pr-14 resize-none bg-slate-950/90 text-slate-100 placeholder:text-slate-500"
         />
-        <Button
+        <button
           type="submit"
           disabled={disabled || !value.trim()}
-          className="absolute right-2 bottom-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 p-0 text-white shadow-lg shadow-violet-500/20 hover:bg-violet-400"
+          className="absolute right-3 bottom-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-violet-500 text-white shadow-lg shadow-violet-500/20 hover:bg-violet-400 disabled:opacity-60 disabled:cursor-not-allowed transition"
           aria-label="Send message"
         >
           <ArrowUp className="h-5 w-5" />
-        </Button>
+        </button>
       </div>
     </form>
   );
