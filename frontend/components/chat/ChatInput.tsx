@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, KeyboardEvent } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 
@@ -49,7 +49,7 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
           className="absolute right-2 bottom-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 p-0 text-white shadow-lg shadow-violet-500/20 hover:bg-violet-400"
           aria-label="Send message"
         >
-          <ArrowRight className="h-5 w-5" />
+          <ArrowUp className="h-5 w-5" />
         </Button>
       </div>
     </form>
