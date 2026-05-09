@@ -52,7 +52,6 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
           <ArrowRight className="h-5 w-5" />
         </Button>
       </div>
-      <p className="mt-2 text-xs text-slate-500">Enter to send, Shift+Enter for a new line.</p>
     </form>
   );
 }

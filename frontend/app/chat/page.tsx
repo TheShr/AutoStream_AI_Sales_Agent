@@ -286,13 +286,6 @@ export default function ChatPage() {
         <div className="space-y-4">
           {error ? <p className="rounded-[1.5rem] bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</p> : null}
           <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isSending} />
-          <div className="flex flex-col gap-2 rounded-[2rem] border border-white/10 bg-slate-950/70 px-5 py-4 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-            <span>{messages.length} messages in this session</span>
-            <span className="inline-flex items-center gap-2">
-              {isSending ? <Spinner /> : <ArrowRight className="h-4 w-4 text-slate-500" />}
-              {statusText}
-            </span>
-          </div>
         </div>
       </section>
     </main>
