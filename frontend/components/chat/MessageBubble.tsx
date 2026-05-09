@@ -37,7 +37,7 @@ export function MessageBubble({ role, text, onCopy, onRegenerate, status = 'comp
       className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`group relative max-w-[86%] rounded-[2rem] border border-white/10 px-5 py-4 text-sm leading-7 shadow-soft transition ${
+        className={`group relative inline-flex max-w-[72%] rounded-[2rem] border border-white/10 px-4 py-3 text-sm leading-6 shadow-soft transition ${
           isUser
             ? 'bg-violet-500 text-white'
             : 'bg-slate-900/80 text-slate-200 ring-1 ring-white/5'

@@ -96,18 +96,20 @@ export default function ChatPage() {
         setMessages((current) =>
           current.map((message) => (message.id === aiId ? { ...message, text: partial } : message)),
         );
-      }, testMode).then((response) => {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === aiId ? {
-              ...message,
-              text: response.response,
-              status: 'complete',
-              extractedEntities: response.extracted_entities
-            } : message,
-          ),
-        );
-      });
+      }, testMode);
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === aiId
+            ? {
+                ...message,
+                text: response.response,
+                status: 'complete',
+                extractedEntities: response.extracted_entities,
+              }
+            : message,
+        ),
+      );
     } catch (err) {
       const message = (err as Error).message || 'Unable to send message.';
       setError(message);
@@ -132,18 +134,20 @@ export default function ChatPage() {
         setMessages((current) =>
           current.map((message) => (message.id === messageId ? { ...message, text: partial } : message)),
         );
-      }, testMode).then((response) => {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === messageId ? {
-              ...message,
-              text: response.response,
-              status: 'complete',
-              extractedEntities: response.extracted_entities
-            } : message,
-          ),
-        );
-      });
+      }, testMode);
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                text: response.response,
+                status: 'complete',
+                extractedEntities: response.extracted_entities,
+              }
+            : message,
+        ),
+      );
       showToast('Response regenerated.');
     } catch (err) {
       const message = (err as Error).message || 'Unable to regenerate response.';
@@ -190,7 +194,7 @@ export default function ChatPage() {
     <main className="grid h-[calc(100vh-4rem)] grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
       <Sidebar tenantName={tenantName} onNewChat={handleClear} />
 
-      <section className="flex h-[calc(100vh-4rem)] flex-col gap-6 rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-soft">
+      <section className="flex h-[calc(100vh-4rem)] flex-col gap-6 overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-soft">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
             <p className="text-sm uppercase tracking-[0.32em] text-violet-300">
@@ -228,7 +232,7 @@ export default function ChatPage() {
         </header>
 
         <div className="flex-1 min-h-0 overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 p-4">
-          <div ref={messageListRef} className="flex flex-1 flex-col gap-4 overflow-y-auto pr-2 pb-4">
+          <div ref={messageListRef} className="flex h-full flex-1 flex-col gap-4 overflow-y-auto pr-2 pb-4">
             {messages.map((message) => (
               <div key={message.id} className="space-y-3">
                 <MessageBubble

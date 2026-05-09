@@ -40,7 +40,7 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
           onKeyDown={handleKeyDown}
           placeholder={placeholder || 'Ask your AI agent anything… Shift+Enter for newline'}
           disabled={disabled}
-          className="min-h-[96px] resize-none bg-slate-950/70 text-slate-100 placeholder:text-slate-500"
+          className="min-h-[72px] max-h-[104px] resize-none bg-slate-950/70 text-slate-100 placeholder:text-slate-500"
         />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-500">Enter to send, Shift+Enter for a new line.</p>
