@@ -31,25 +31,28 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
           onSend();
         }
       }}
-      className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-4 shadow-soft"
+      className="rounded-[1.75rem] border border-white/10 bg-slate-950/90 p-3 shadow-soft"
     >
-      <div className="flex flex-col gap-3">
+      <div className="relative">
         <Textarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder || 'Ask your AI agent anything… Shift+Enter for newline'}
+          placeholder={placeholder || 'Type a message and hit Enter'}
           disabled={disabled}
-          className="min-h-[72px] max-h-[104px] resize-none bg-slate-950/70 text-slate-100 placeholder:text-slate-500"
+          rows={1}
+          className="min-h-[46px] max-h-[96px] w-full pr-14 resize-none bg-slate-950/90 text-slate-100 placeholder:text-slate-500"
         />
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-slate-500">Enter to send, Shift+Enter for a new line.</p>
-          <Button type="submit" disabled={disabled || !value.trim()}>
-            Send message
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          disabled={disabled || !value.trim()}
+          className="absolute right-2 bottom-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 p-0 text-white shadow-lg shadow-violet-500/20 hover:bg-violet-400"
+          aria-label="Send message"
+        >
+          <ArrowRight className="h-5 w-5" />
+        </Button>
       </div>
+      <p className="mt-2 text-xs text-slate-500">Enter to send, Shift+Enter for a new line.</p>
     </form>
   );
 }
