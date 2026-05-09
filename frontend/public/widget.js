@@ -142,14 +142,14 @@
         #${WIDGET_ID} .widget-button {
           position: fixed;
           inset: auto 24px 24px auto;
-          width: 62px;
-          height: 62px;
+          width: 66px;
+          height: 66px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+          background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
           border: none;
           color: white;
           cursor: pointer;
-          box-shadow: 0 22px 48px rgba(79, 70, 229, 0.18);
+          box-shadow: 0 24px 64px rgba(249, 115, 22, 0.22);
           z-index: 99999;
           transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
           display: grid;
@@ -160,16 +160,25 @@
         #${WIDGET_ID} .widget-button:hover,
         #${WIDGET_ID} .widget-button:focus-visible {
           transform: translateY(-2px);
-          box-shadow: 0 26px 60px rgba(79, 70, 229, 0.22);
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+          box-shadow: 0 28px 72px rgba(249, 115, 22, 0.26);
+          background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
         }
 
-        #${WIDGET_ID} .widget-button-label {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          line-height: 1;
+        #${WIDGET_ID} .widget-button-icon {
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+        }
+
+        #${WIDGET_ID} .widget-button-icon svg {
+          width: 100%;
+          height: 100%;
+          stroke: white;
+          stroke-width: 1.8;
+          fill: none;
+          stroke-linecap: round;
+          stroke-linejoin: round;
         }
 
         #${WIDGET_ID} .widget-panel {
@@ -396,7 +405,17 @@
       this.button = createElement('button', {
         className: 'widget-button',
         'aria-label': 'Open chat'
-      }, [createElement('span', { className: 'widget-button-label' }, ['Chat'])]);
+      }, [createElement('span', { className: 'widget-button-icon' }, [
+        createElement('svg', {
+          viewBox: '0 0 24 24',
+          xmlns: 'http://www.w3.org/2000/svg',
+          'aria-hidden': 'true',
+          focusable: 'false'
+        }, [
+          createElement('path', { d: 'M4 5.5C4 4.12 5.12 3 6.5 3h11c1.38 0 2.5 1.12 2.5 2.5v9c0 1.38-1.12 2.5-2.5 2.5H9.5L5 21V17.5H6.5C5.67 17.5 5 16.83 5 16V5.5Z' }),
+          createElement('path', { d: 'M8.75 9.5h6.5M8.75 12.5h4' })
+        ])
+      ])]);
       this.root.appendChild(this.button);
 
       // Panel
