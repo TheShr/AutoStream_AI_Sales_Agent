@@ -242,7 +242,7 @@ async def runtime_error_handler(request, exc: RuntimeError):
     return JSONResponse(status_code=502, content={"detail": str(exc)})
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     """Service health check."""
     return {
